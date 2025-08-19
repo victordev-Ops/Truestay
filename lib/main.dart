@@ -22,10 +22,15 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('TrueStay')),
-      body: const Center(
-        child: Text('Welcome to TrueStay! 🚀'),
+    return const Scaffold(
+      body: Center(
+        child: Text(
+          'Truestay',
+          style: TextStyle(
+            fontSize: 32,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
       ),
     );
   }
