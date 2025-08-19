@@ -25,7 +25,8 @@ jobs:
       - name: Determine Flutter version
         id: flutter-version
         run: |
-          FLUTTER_VERSION="stable"
+          # Use version.txt if available; otherwise default to 3.35.1
+          FLUTTER_VERSION="3.35.1"
           if [ -f version.txt ] && [ -s version.txt ]; then
             FLUTTER_VERSION=$(cat version.txt | tr -d '\r\n')
           fi
