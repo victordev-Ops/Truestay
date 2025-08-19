@@ -20,13 +20,24 @@ jobs:
 
       - name: Read Flutter version
         id: flutter-version
-        run: echo "FLUTTER_VERSION=$(cat version.txt)" >> $GITHUB_ENV
+        run: |
+          if [ -f version.txt ]; then
+            echo "FLUTTER_VERSION=$(cat version.txt)" >> $GITHUB_ENV
+          else
+            echo "FLUTTER_VERSION=stable" >> $GITHUB_ENV
+          fi
+          echo "Using Flutter version: $FLUTTER_VERSION"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
+
+      - name: Show Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
 
       - name: Install dependencies
         run: flutter pub get
