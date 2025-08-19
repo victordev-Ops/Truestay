@@ -1,27 +1,40 @@
 name: update-flutter-web
 
+on:
+  push:
+    branches:
+      - main
+      - update-flutter-web
+  pull_request:
+    branches:
+      - main
+
 permissions:
   contents: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
       - name: Determine Flutter version
         id: flutter-version
         run: |
-          FLUTTER_VERSION="stable"
-          if [ -f version.txt ] && [ -s version.txt ]; then
-            FLUTTER_VERSION=$(cat version.txt | tr -d '\r\n')
+          DEFAULT_VERSION="3.19.1"
+          FLUTTER_VERSION=$DEFAULT_VERSION
+          
+          if [ -f version.txt ] && v=$(< version.txt) && [[ $v =~ ^[0-9] ]]; then
+            FLUTTER_VERSION=$(cat version.txt | tr -d '\n\r')
+            echo "::notice::Using Flutter version from version.txt: $FLUTTER_VERSION"
+          else
+            echo "::warning::version.txt not found or invalid. Falling back to default Flutter version: $DEFAULT_VERSION"
           fi
+
           echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> $GITHUB_ENV
-          echo "Using Flutter version: $FLUTTER_VERSION"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -34,10 +47,10 @@ jobs:
         with:
           path: |
             ~/.pub-cache
-            ~/.flutter
+            .dart_tool
           key: flutter-cache-${{ env.FLUTTER_VERSION }}-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            flutter-cache-${{ env.FLUTTER_VERSION }}-
+            flutter-cache-
 
       - name: Show Flutter & Dart versions
         run: |
@@ -56,12 +69,12 @@ jobs:
       - name: Determine GitHub Pages base href
         id: base-href
         run: |
-          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          REPO_NAME=${GITHUB_REPOSITORY#*/}
           echo "BASE_HREF=/$REPO_NAME/" >> $GITHUB_ENV
           echo "Using base href: /$REPO_NAME/"
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href="${{ env.BASE_HREF }}"
+        run: flutter build web --release --base-href "${{ env.BASE_HREF }}"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
