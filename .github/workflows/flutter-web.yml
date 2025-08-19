@@ -1,9 +1,13 @@
-name: Deploy Flutter Web to GitHub Pages
+name: update-flutter-web
 
 on:
   push:
     branches:
+      - main
       - update-flutter-web
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -18,8 +22,15 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Read Flutter version
-        run: echo "FLUTTER_VERSION=$(cat version.txt)" >> $GITHUB_ENV
+      - name: Determine Flutter version
+        id: flutter-version
+        run: |
+          FLUTTER_VERSION="stable"
+          if [ -f version.txt ] && [ -s version.txt ]; then
+            FLUTTER_VERSION=$(cat version.txt | tr -d '\r\n')
+          fi
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> $GITHUB_ENV
+          echo "Using Flutter version: $FLUTTER_VERSION"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -27,14 +38,51 @@ jobs:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: stable
 
+      - name: Cache Flutter Pub packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.pub-cache
+            ~/.flutter
+          key: flutter-cache-${{ env.FLUTTER_VERSION }}-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            flutter-cache-${{ env.FLUTTER_VERSION }}-
+
+      - name: Show Flutter & Dart versions
+        run: |
+          flutter --version
+          dart --version
+
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Clean previous build
+        run: |
+          if [ -d build/web ]; then
+            rm -rf build/web
+          fi
+
+      - name: Determine GitHub Pages base href
+        id: base-href
+        run: |
+          REPO_NAME=$(basename $GITHUB_REPOSITORY)
+          echo "BASE_HREF=/$REPO_NAME/" >> $GITHUB_ENV
+          echo "Using base href: /$REPO_NAME/"
+
       - name: Build Flutter Web
-        run: flutter build web --release --base-href="/Truestay/"
+        run: flutter build web --release --base-href="${{ env.BASE_HREF }}"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/web
+
+      - name: Notify Slack
+        if: always()
+        uses: rtCamp/action-slack-notify@v2
+        with:
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+          message: |
+            Flutter Web Build for ${{ github.repository }} on branch ${{ github.ref_name }} 
+            has completed with status: ${{ job.status }}.
