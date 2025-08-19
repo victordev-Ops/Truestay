@@ -13,7 +13,7 @@ class TrueStayApp extends StatelessWidget {
       title: 'Truestay',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const HomePage(),
-      debugShowCheckedModeBanner: false, // removes the debug banner
+      debugShowCheckedModeBanner: false,
     );
   }
 }
