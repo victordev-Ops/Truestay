@@ -1,16 +1,18 @@
-name: update-flutter-web
+name: flutter-web
 
 on:
   push:
-    branches:
-      - main
-      - update-flutter-web
+    branches: [ main, update-flutter-web ]
   pull_request:
-    branches:
-      - main
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+concurrency:
+  group: flutter-web-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -23,18 +25,23 @@ jobs:
 
       - name: Determine Flutter version
         id: flutter-version
+        shell: bash
         run: |
           DEFAULT_VERSION="3.19.1"
-          FLUTTER_VERSION=$DEFAULT_VERSION
-          
-          if [ -f version.txt ] && v=$(< version.txt) && [[ $v =~ ^[0-9] ]]; then
-            FLUTTER_VERSION=$(cat version.txt | tr -d '\n\r')
-            echo "::notice::Using Flutter version from version.txt: $FLUTTER_VERSION"
+          if [[ -f version.txt ]]; then
+            RAW=$(tr -d '\r\n' < version.txt)
+            if [[ "$RAW" =~ ^[0-9]+(\.[0-9]+)*([-/][A-Za-z0-9\.\-]+)?$ || "$RAW" == "stable" || "$RAW" == "beta" || "$RAW" == "master" ]]; then
+              FLUTTER_VERSION="$RAW"
+              echo "::notice::Using Flutter version from version.txt: $FLUTTER_VERSION"
+            else
+              FLUTTER_VERSION="$DEFAULT_VERSION"
+              echo "::warning::Invalid version in version.txt ('$RAW'). Using default: $FLUTTER_VERSION"
+            fi
           else
-            echo "::warning::version.txt not found or invalid. Falling back to default Flutter version: $DEFAULT_VERSION"
+            FLUTTER_VERSION="$DEFAULT_VERSION"
+            echo "::notice::version.txt not found. Using default: $FLUTTER_VERSION"
           fi
-
-          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> $GITHUB_ENV
+          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> "$GITHUB_ENV"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -48,9 +55,9 @@ jobs:
           path: |
             ~/.pub-cache
             .dart_tool
-          key: flutter-cache-${{ env.FLUTTER_VERSION }}-${{ hashFiles('**/pubspec.lock') }}
+          key: ${{ runner.os }}-pub-${{ env.FLUTTER_VERSION }}-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            flutter-cache-
+            ${{ runner.os }}-pub-
 
       - name: Show Flutter & Dart versions
         run: |
@@ -61,17 +68,23 @@ jobs:
         run: flutter pub get
 
       - name: Clean previous build
-        run: |
-          if [ -d build/web ]; then
-            rm -rf build/web
-          fi
+        run: rm -rf build/web
 
       - name: Determine GitHub Pages base href
         id: base-href
+        shell: bash
         run: |
-          REPO_NAME=${GITHUB_REPOSITORY#*/}
-          echo "BASE_HREF=/$REPO_NAME/" >> $GITHUB_ENV
-          echo "Using base href: /$REPO_NAME/"
+          OWNER="${GITHUB_REPOSITORY%%/*}"
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          lo_owner=$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')
+          lo_repo=$(echo "$REPO_NAME" | tr '[:upper:]' '[:lower:]')
+          if [[ "$lo_repo" == "${lo_owner}.github.io" ]]; then
+            BASE_HREF="/"
+          else
+            BASE_HREF="/$REPO_NAME/"
+          fi
+          echo "BASE_HREF=$BASE_HREF" >> "$GITHUB_ENV"
+          echo "::notice::Using base href: $BASE_HREF"
 
       - name: Build Flutter Web
         run: flutter build web --release --base-href "${{ env.BASE_HREF }}"
