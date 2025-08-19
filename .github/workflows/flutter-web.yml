@@ -22,21 +22,10 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Determine Flutter version
-        id: flutter-version
-        run: |
-          # Use version.txt if available; otherwise default to 3.35.1
-          FLUTTER_VERSION="3.35.1"
-          if [ -f version.txt ] && [ -s version.txt ]; then
-            FLUTTER_VERSION=$(cat version.txt | tr -d '\r\n')
-          fi
-          echo "FLUTTER_VERSION=$FLUTTER_VERSION" >> $GITHUB_ENV
-          echo "Using Flutter version: $FLUTTER_VERSION"
-
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: ${{ env.FLUTTER_VERSION }}
+          flutter-version: 3.35.1
           channel: stable
 
       - name: Cache Flutter Pub packages
@@ -45,9 +34,9 @@ jobs:
           path: |
             ~/.pub-cache
             ~/.flutter
-          key: flutter-cache-${{ env.FLUTTER_VERSION }}-${{ hashFiles('**/pubspec.lock') }}
+          key: flutter-cache-3.35.1-${{ hashFiles('**/pubspec.lock') }}
           restore-keys: |
-            flutter-cache-${{ env.FLUTTER_VERSION }}-
+            flutter-cache-3.35.1-
 
       - name: Show Flutter & Dart versions
         run: |
@@ -78,13 +67,3 @@ jobs:
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: build/web
-
-      - name: Notify Slack
-        if: always()
-        uses: 8398a7/action-slack@v3
-        with:
-          status: ${{ job.status }}
-          fields: repo,commit,author
-          text: Flutter Web Build for ${{ github.repository }} on branch ${{ github.ref_name }} has ${{ job.status }}.
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
