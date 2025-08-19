@@ -3,10 +3,10 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - main   # or master if that's your default branch
 
 permissions:
-  contents: write
+  contents: write   # allows workflow to push to gh-pages
 
 jobs:
   build:
@@ -32,7 +32,7 @@ jobs:
         run: flutter pub get
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href="/truestay/"
+        run: flutter build web --release --base-href="/Truestay/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
