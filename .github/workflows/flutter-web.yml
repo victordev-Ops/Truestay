@@ -80,9 +80,10 @@ jobs:
 
       - name: Notify Slack
         if: always()
-        uses: rtCamp/action-slack-notify@v2
+        uses: 8398a7/action-slack@v3
         with:
-          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-          message: |
-            Flutter Web Build for ${{ github.repository }} on branch ${{ github.ref_name }} 
-            has completed with status: ${{ job.status }}.
+          status: ${{ job.status }}
+          fields: repo,commit,author
+          text: Flutter Web Build for ${{ github.repository }} on branch ${{ github.ref_name }} has ${{ job.status }}.
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
