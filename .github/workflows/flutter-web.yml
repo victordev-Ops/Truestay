@@ -3,10 +3,10 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches:
-      - main   # or master if that's your default branch
+      - update-flutter-web
 
 permissions:
-  contents: write   # allows workflow to push to gh-pages
+  contents: write
 
 jobs:
   build:
@@ -19,7 +19,6 @@ jobs:
           fetch-depth: 0
 
       - name: Read Flutter version
-        id: flutter-version
         run: echo "FLUTTER_VERSION=$(cat version.txt)" >> $GITHUB_ENV
 
       - name: Set up Flutter
