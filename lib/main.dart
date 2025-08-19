@@ -10,9 +10,10 @@ class TrueStayApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'TrueStay',
+      title: 'Truestay',
       theme: ThemeData(primarySwatch: Colors.blue),
       home: const HomePage(),
+      debugShowCheckedModeBanner: false, // removes the debug banner
     );
   }
 }
@@ -27,7 +28,7 @@ class HomePage extends StatelessWidget {
         child: Text(
           'Truestay',
           style: TextStyle(
-            fontSize: 32,
+            fontSize: 48,
             fontWeight: FontWeight.bold,
           ),
         ),
