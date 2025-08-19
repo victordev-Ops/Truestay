@@ -3,10 +3,10 @@ name: Deploy Flutter Web to GitHub Pages
 on:
   push:
     branches:
-      - main   # or master, depending on your repo default
+      - main
 
 permissions:
-  contents: write   # allow workflow to push to gh-pages
+  contents: write
 
 jobs:
   build:
@@ -16,19 +16,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # prevents exit code 128
+          fetch-depth: 0
+
+      - name: Read Flutter version
+        id: flutter-version
+        run: echo "FLUTTER_VERSION=$(cat version.txt)" >> $GITHUB_ENV
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'   # pick your Flutter version
-          channel: 'stable'
+          flutter-version: ${{ env.FLUTTER_VERSION }}
+          channel: stable
 
       - name: Install dependencies
         run: flutter pub get
 
       - name: Build Flutter Web
-        run: flutter build web --release --base-href="/${{ github.event.repository.name }}/"
+        run: flutter build web --release --base-href="/truestay/"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
